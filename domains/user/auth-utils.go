@@ -17,12 +17,6 @@ func generateAccessToken(user *User) (string, error) {
 	return token.SignedString([]byte(config.Config.JWTSecret))
 }
 
-func validateAccessToken(tokenStr string) (*jwt.Token, error) {
-	return jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.Config.JWTSecret), nil
-	})
-}
-
 func extractUserIDFromToken(tokenStr string) (uint, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.Config.JWTSecret), nil

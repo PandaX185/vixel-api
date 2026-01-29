@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"vixel/config"
+	"vixel/domains/image"
 	"vixel/domains/user"
 
 	"github.com/gin-gonic/gin"
@@ -19,11 +20,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	db.Migrator().AutoMigrate(&user.User{})
+	db.Migrator().AutoMigrate(&user.User{}, &image.Image{})
 
 	userService := user.NewUserService(db)
 	userHandler := user.NewUserHandler(userService)
 	userHandler.SetupUserRoutes(api)
+
+	imageService := image.NewImageService(db)
+	uploadService := image.NewUploadService()
+	imageHandler := image.NewImageHandler(imageService, uploadService)
+	imageHandler.SetupImageRoutes(api)
 
 	if err := app.Run(config.Config.Port); err != nil {
 		log.Fatalf("failed to start server: %v", err)
