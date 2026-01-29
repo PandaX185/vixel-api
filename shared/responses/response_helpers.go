@@ -37,3 +37,11 @@ func InternalServerError(ctx *gin.Context, err error) {
 		"error":     err.Error(),
 	})
 }
+
+func Unauthorized(ctx *gin.Context, err error) {
+	ctx.JSON(UNAUTHORIZED, gin.H{
+		"timestamp": time.Now().Local(),
+		"status":    "unauthorized",
+		"error":     err.Error(),
+	})
+}

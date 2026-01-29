@@ -8,8 +8,9 @@ import (
 )
 
 type EnvConfig struct {
-	DbUrl string `env:"DB_URL"`
-	Port  string `env:"PORT" envDefault:"8080"`
+	DbUrl     string `env:"DB_URL"`
+	Port      string `env:"PORT" envDefault:"8080"`
+	JWTSecret string `env:"JWT_SECRET"`
 }
 
 var Config = &EnvConfig{}
@@ -20,8 +21,9 @@ func LoadEnvConfig() error {
 	}
 
 	Config = &EnvConfig{
-		DbUrl: os.Getenv("DB_URL"),
-		Port:  os.Getenv("PORT"),
+		DbUrl:     os.Getenv("DB_URL"),
+		Port:      os.Getenv("PORT"),
+		JWTSecret: os.Getenv("JWT_SECRET"),
 	}
 
 	log.Printf("Environment configuration loaded: %+v\n", Config)

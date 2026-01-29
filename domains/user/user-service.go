@@ -18,10 +18,36 @@ func hashPassword(password string) string {
 	return string(hashed)
 }
 
-func (s *UserService) Register(user *User) (*User, error) {
+func (s *UserService) Register(user *User) (*TokenResponse, error) {
 	user.Password = hashPassword(user.Password)
 	if err := s.db.Create(user).Error; err != nil {
 		return nil, err
 	}
-	return user, nil
+
+	token, err := generateAccessToken(user)
+	if err != nil {
+		return nil, err
+	}
+	return &TokenResponse{
+		AccessToken: token,
+	}, nil
+}
+
+func (s *UserService) Login(email, password string) (*TokenResponse, error) {
+	var user User
+	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, err
+	}
+
+	token, err := generateAccessToken(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &TokenResponse{
+		AccessToken: token,
+	}, nil
 }
