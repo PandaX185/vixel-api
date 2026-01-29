@@ -2,6 +2,8 @@ package image
 
 import (
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"mime/multipart"
 )
 

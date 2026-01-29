@@ -37,7 +37,7 @@ func (h *ImageHandler) UploadImage() gin.HandlerFunc {
 			return
 		}
 
-		imageURL, err := h.uploadService.UploadImage(dto.File)
+		imageURL, err := h.uploadService.UploadImage(ctx,dto.File)
 		if err != nil {
 			responses.InternalServerError(ctx, err)
 			return
