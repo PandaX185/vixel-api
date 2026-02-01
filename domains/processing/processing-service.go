@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"mime/multipart"
 	"vixel/domains/image"
 
 	internalImg "image"
@@ -42,7 +41,7 @@ func (s *ProcessingService) TransformImage(ctx context.Context, imageID string, 
 		return "", err
 	}
 
-	uploadedURL, err := s.uploadService.UploadImage(ctx, transformedImg)
+	uploadedURL, err := s.uploadService.UploadImageFromBytes(ctx, transformedImg, "image/jpeg")
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +53,7 @@ func (s *ProcessingService) TransformImage(ctx context.Context, imageID string, 
 	return uploadedURL, nil
 }
 
-func applyTransformations(img []byte, dto TransformationDTO) (*multipart.FileHeader, error) {
+func applyTransformations(img []byte, dto TransformationDTO) ([]byte, error) {
 	src, err := imaging.Decode(bytes.NewReader(img))
 	if err != nil {
 		return nil, err
@@ -156,21 +155,5 @@ func applyTransformations(img []byte, dto TransformationDTO) (*multipart.FileHea
 		img = buf.Bytes()
 	}
 
-	fileHeader, err := createFileHeaderFromBytes(img, "transformed.jpg")
-	if err != nil {
-		return nil, err
-	}
-
-	return fileHeader, nil
-}
-
-func createFileHeaderFromBytes(data []byte, filename string) (*multipart.FileHeader, error) {
-	file := multipart.FileHeader{
-		Filename: filename,
-		Size:     int64(len(data)),
-		Header:   make(map[string][]string),
-	}
-	file.Header.Set("Content-Type", "image/jpeg")
-
-	return &file, nil
+	return img, nil
 }

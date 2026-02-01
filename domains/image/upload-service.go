@@ -1,8 +1,10 @@
 package image
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"mime/multipart"
 	"time"
@@ -73,6 +75,48 @@ func (s *UploadService) UploadImage(ctx context.Context, file *multipart.FileHea
 	return imageURL, nil
 }
 
+func (s *UploadService) UploadImageFromBytes(ctx context.Context, data []byte, contentType string) (string, error) {
+	bucketName := config.Config.MINIOBucketName
+	if ok, err := s.client.BucketExists(ctx, bucketName); err != nil || !ok {
+		if err := s.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{
+			Region: config.Config.MINIORegion,
+		}); err != nil {
+			return "", err
+		}
+
+		policy := fmt.Sprintf(`{
+			"Version": "2012-10-17",
+			"Statement": [{
+				"Effect": "Allow",
+				"Principal": {"AWS": ["*"]},
+				"Action": ["s3:GetObject"],
+				"Resource": ["arn:aws:s3:::%s/*"]
+			}]
+		}`, bucketName)
+		if err := s.client.SetBucketPolicy(ctx, bucketName, policy); err != nil {
+			return "", err
+		}
+	}
+
+	imageName := fmt.Sprintf("vixel-%v-%v", rand.Intn(999999), time.Now().UnixNano())
+	reader := bytes.NewReader(data)
+
+	uploadInfo, err := s.client.PutObject(ctx, bucketName, imageName, reader, int64(len(data)), minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	protocol := "http"
+	if config.Config.MINIOUseSSL {
+		protocol = "https"
+	}
+	imageURL := fmt.Sprintf("%s://%s/%s/%s", protocol, config.Config.MINIOEndpoint, bucketName, uploadInfo.Key)
+
+	return imageURL, nil
+}
+
 func (s *UploadService) DeleteImage(ctx context.Context, imageURL string) error {
 	bucketName := config.Config.MINIOBucketName
 
@@ -114,13 +158,7 @@ func (s *UploadService) GetImageByUrl(ctx context.Context, imageURL string) ([]b
 	}
 	defer object.Close()
 
-	stat, err := object.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	data := make([]byte, stat.Size)
-	_, err = object.Read(data)
+	data, err := io.ReadAll(object)
 	if err != nil {
 		return nil, err
 	}
