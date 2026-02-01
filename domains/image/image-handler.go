@@ -2,6 +2,7 @@ package image
 
 import (
 	"errors"
+	"strconv"
 	"vixel/shared/middlewares"
 	"vixel/shared/responses"
 
@@ -19,9 +20,9 @@ func NewImageHandler(service *ImageService, uploadService *UploadService) *Image
 
 func (h *ImageHandler) SetupImageRoutes(rg *gin.RouterGroup) {
 	rg.POST("/images", middlewares.JWTMiddleware(), h.UploadImage())
-	// rg.GET("/images/:id", h.GetImage())
-	// rg.GET("/users/:user_id/images", h.ListUserImages())
-	// rg.DELETE("/images/:id", h.DeleteImage())
+	rg.GET("/images/:id", middlewares.JWTMiddleware(), h.GetImage())
+	rg.GET("/users/:user_id/images", middlewares.JWTMiddleware(), h.ListUserImages())
+	rg.DELETE("/images/:id", middlewares.JWTMiddleware(), h.DeleteImage())
 }
 
 func (h *ImageHandler) UploadImage() gin.HandlerFunc {
@@ -37,7 +38,7 @@ func (h *ImageHandler) UploadImage() gin.HandlerFunc {
 			return
 		}
 
-		imageURL, err := h.uploadService.UploadImage(ctx,dto.File)
+		imageURL, err := h.uploadService.UploadImage(ctx, dto.File)
 		if err != nil {
 			responses.InternalServerError(ctx, err)
 			return
@@ -62,5 +63,97 @@ func (h *ImageHandler) UploadImage() gin.HandlerFunc {
 		}
 
 		responses.Created(ctx, response)
+	}
+}
+
+func (h *ImageHandler) GetImage() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			responses.BadRequest(ctx, errors.New("invalid image id"))
+			return
+		}
+
+		image, err := h.imageService.GetImageByID(uint(id))
+		if err != nil {
+			responses.NotFound(ctx, errors.New("image not found"))
+			return
+		}
+
+		userID := ctx.Value("user_id").(uint)
+		if image.UserID != userID {
+			responses.Unauthorized(ctx, errors.New("access denied"))
+			return
+		}
+
+		response := ImageResponse{
+			ID:      image.ID,
+			URL:     image.URL,
+			AltText: image.AltText,
+			UserID:  image.UserID,
+		}
+
+		responses.Ok(ctx, response)
+	}
+}
+
+func (h *ImageHandler) ListUserImages() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		userIDStr := ctx.Param("user_id")
+		userID, err := strconv.ParseUint(userIDStr, 10, 32)
+		if err != nil {
+			responses.BadRequest(ctx, errors.New("invalid user id"))
+			return
+		}
+
+		images, err := h.imageService.ListImagesByUser(uint(userID))
+		if err != nil {
+			responses.InternalServerError(ctx, err)
+			return
+		}
+
+		var imageResponses []ImageResponse
+		for _, img := range images {
+			imageResponses = append(imageResponses, ImageResponse{
+				ID:      img.ID,
+				URL:     img.URL,
+				AltText: img.AltText,
+				UserID:  img.UserID,
+			})
+		}
+
+		responses.Ok(ctx, imageResponses)
+	}
+}
+
+func (h *ImageHandler) DeleteImage() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			responses.BadRequest(ctx, errors.New("invalid image id"))
+			return
+		}
+
+		image, err := h.imageService.GetImageByID(uint(id))
+		if err != nil {
+			responses.NotFound(ctx, errors.New("image not found"))
+			return
+		}
+
+		userID := ctx.Value("user_id").(uint)
+		if image.UserID != userID {
+			responses.Unauthorized(ctx, errors.New("access denied"))
+			return
+		}
+
+		err = h.imageService.DeleteImage(uint(id))
+		if err != nil {
+			responses.InternalServerError(ctx, err)
+			return
+		}
+
+		responses.Ok(ctx, gin.H{"message": "image deleted"})
 	}
 }

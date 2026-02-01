@@ -45,3 +45,11 @@ func Unauthorized(ctx *gin.Context, err error) {
 		"error":     err.Error(),
 	})
 }
+
+func NotFound(ctx *gin.Context, err error) {
+	ctx.JSON(NOT_FOUND, gin.H{
+		"timestamp": time.Now().Local(),
+		"status":    "resource not found",
+		"error":     err.Error(),
+	})
+}
