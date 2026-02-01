@@ -4,6 +4,7 @@ import (
 	"log"
 	"vixel/config"
 	"vixel/domains/image"
+	"vixel/domains/processing"
 	"vixel/domains/user"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,10 @@ func main() {
 	uploadService := image.NewUploadService()
 	imageHandler := image.NewImageHandler(imageService, uploadService)
 	imageHandler.SetupImageRoutes(api)
+
+	processingService := processing.NewProcessingService(db, uploadService)
+	processingHandler := processing.NewProcessingHandler(processingService)
+	processingHandler.SetupProcessingRoutes(api)
 
 	if err := app.Run(config.Config.Port); err != nil {
 		log.Fatalf("failed to start server: %v", err)

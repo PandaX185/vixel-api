@@ -72,3 +72,58 @@ func (s *UploadService) UploadImage(ctx context.Context, file *multipart.FileHea
 
 	return imageURL, nil
 }
+
+func (s *UploadService) DeleteImage(ctx context.Context, imageURL string) error {
+	bucketName := config.Config.MINIOBucketName
+
+	var objectName string
+	protocol := "http"
+	if config.Config.MINIOUseSSL {
+		protocol = "https"
+	}
+	prefix := fmt.Sprintf("%s://%s/%s/", protocol, config.Config.MINIOEndpoint, bucketName)
+	if len(imageURL) <= len(prefix) || imageURL[:len(prefix)] != prefix {
+		return fmt.Errorf("invalid image URL")
+	}
+	objectName = imageURL[len(prefix):]
+
+	err := s.client.RemoveObject(ctx, bucketName, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UploadService) GetImageByUrl(ctx context.Context, imageURL string) ([]byte, error) {
+	bucketName := config.Config.MINIOBucketName
+
+	var objectName string
+	protocol := "http"
+	if config.Config.MINIOUseSSL {
+		protocol = "https"
+	}
+	prefix := fmt.Sprintf("%s://%s/%s/", protocol, config.Config.MINIOEndpoint, bucketName)
+	if len(imageURL) <= len(prefix) || imageURL[:len(prefix)] != prefix {
+		return nil, fmt.Errorf("invalid image URL")
+	}
+	objectName = imageURL[len(prefix):]
+
+	object, err := s.client.GetObject(ctx, bucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+	defer object.Close()
+
+	stat, err := object.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]byte, stat.Size)
+	_, err = object.Read(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
