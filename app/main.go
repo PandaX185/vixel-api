@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"vixel/config"
 	"vixel/domains/image"
 	"vixel/domains/processing"
 	"vixel/domains/user"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -15,6 +17,13 @@ func main() {
 		log.Fatalf("failed to load env config: %v", err)
 	}
 	app := gin.Default()
+	c := cors.AllowAll()
+	app.Use(func(gc *gin.Context) {
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gc.Next()
+		})
+		c.Handler(next).ServeHTTP(gc.Writer, gc.Request)
+	})
 	api := app.Group("/api/v1")
 
 	db, err := config.NewPostgres()
