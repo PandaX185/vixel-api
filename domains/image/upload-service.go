@@ -14,6 +14,10 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+type UploadServiceInterface interface {
+	UploadImage(ctx context.Context, file *multipart.FileHeader) (string, error)
+}
+
 type UploadService struct {
 	client *minio.Client
 }

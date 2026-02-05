@@ -9,12 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ImageHandler struct {
-	imageService  *ImageService
-	uploadService *UploadService
+type ImageServiceInterface interface {
+	SaveImage(image *Image) (*Image, error)
+	GetImageByID(id uint) (*Image, error)
+	ListImagesByUser(userID uint) ([]Image, error)
+	DeleteImage(id uint) error
 }
 
-func NewImageHandler(service *ImageService, uploadService *UploadService) *ImageHandler {
+type ImageHandler struct {
+	imageService  ImageServiceInterface
+	uploadService UploadServiceInterface
+}
+
+func NewImageHandler(service ImageServiceInterface, uploadService UploadServiceInterface) *ImageHandler {
 	return &ImageHandler{imageService: service, uploadService: uploadService}
 }
 

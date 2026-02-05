@@ -1,16 +1,21 @@
 package processing
 
 import (
+	"context"
 	"vixel/shared/responses"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ProcessingHandler struct {
-	processingService *ProcessingService
+type ProcessingServiceInterface interface {
+	TransformImage(ctx context.Context, imageID string, dto TransformationDTO) (string, error)
 }
 
-func NewProcessingHandler(service *ProcessingService) *ProcessingHandler {
+type ProcessingHandler struct {
+	processingService ProcessingServiceInterface
+}
+
+func NewProcessingHandler(service ProcessingServiceInterface) *ProcessingHandler {
 	return &ProcessingHandler{processingService: service}
 }
 
