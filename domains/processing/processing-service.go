@@ -70,7 +70,7 @@ func applyTransformations(img []byte, dto TransformationDTO) ([]byte, error) {
 	}
 
 	if dto.Crop != nil {
-		cropped := imaging.Crop(src, internalImg.Rect(dto.Crop.X, dto.Crop.Y, dto.Crop.Width, dto.Crop.Height))
+		cropped := imaging.Crop(src, internalImg.Rect(dto.Crop.X, dto.Crop.Y, dto.Crop.X+dto.Crop.Width, dto.Crop.Y+dto.Crop.Height))
 		buf := new(bytes.Buffer)
 		err = imaging.Encode(buf, cropped, imaging.JPEG)
 		if err != nil {
@@ -147,7 +147,7 @@ func applyTransformations(img []byte, dto TransformationDTO) ([]byte, error) {
 		dc := gg.NewContext(200, 50)
 		dc.SetRGBA(1, 1, 1, 0.5)
 		dc.DrawStringAnchored(dto.Watermark.Text, 100, 25, 0.5, 0.5)
-		watermark := dc.Image().(*internalImg.NRGBA)
+		watermark := dc.Image().(*internalImg.RGBA)
 		err = imaging.Encode(buf, imaging.Overlay(src, watermark, position, 0.5), imaging.JPEG)
 		if err != nil {
 			return nil, err
