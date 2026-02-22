@@ -2,6 +2,8 @@
 
 Vixel API is a Go-based REST API for image management and processing. It allows users to register, authenticate, upload images, manage their image collections, and apply transformations to images.
 
+This project is an application on the [Image Processing Service](https://roadmap.sh/projects/image-processing-service)
+
 ## Features
 
 - User registration and authentication with JWT tokens
